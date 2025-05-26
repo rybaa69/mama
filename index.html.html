@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dzień Mamy</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #ffe6f0;
+      overflow: hidden;
+      text-align: center;
+    }
+
+    /* Startowy ekran */
+    #welcome {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: #fff0f5;
+      border: 4px solid #d63384;
+      padding: 40px 30px;
+      max-width: 700px;
+      width: 90%;
+      color: #a61155;
+      z-index: 10;
+    }
+
+    #welcome h1 {
+      font-size: 2.4em;
+      margin-bottom: 20px;
+    }
+
+    #welcome p {
+      font-size: 1.3em;
+      margin: 10px 0;
+    }
+
+    .button {
+      padding: 15px 40px;
+      font-size: 1.2em;
+      background-color: #ff85a2;
+      border: none;
+      color: white;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+
+    #gameCanvas {
+      display: none;
+      margin: 0 auto;
+      background-color: #fff0f5;
+      border: 2px solid #d63384;
+    }
+
+    #controls {
+      display: none;
+      margin-top: 10px;
+    }
+
+    .control-button {
+      font-size: 2em;
+      padding: 10px 25px;
+      margin: 0 20px;
+      border: none;
+      border-radius: 10px;
+      background-color: #ff85a2;
+      color: white;
+      cursor: pointer;
+    }
+
+    #winSection, #finalMessage {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background: #ffe6f0;
+      z-index: 20;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    #winSection.active, #finalMessage.active {
+      display: flex;
+    }
+
+    #winSection h2, #finalMessage h2 {
+      font-size: 3em;
+      color: #d63384;
+      margin-bottom: 30px;
+      z-index: 2;
+    }
+
+    .floating {
+      position: fixed;
+      font-size: 4em;
+      animation: float 6s linear infinite;
+      pointer-events: none;
+      user-select: none;
+      z-index: 1;
+      opacity: 0.6;
+    }
+
+    .balloon { color: #ff4081; }
+    .heart { color: #ff1493; }
+
+    @keyframes float {
+      0% {
+        transform: translateY(100vh) scale(1.2) rotate(0deg);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(-10vh) scale(1.5) rotate(360deg);
+        opacity: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Ekran powitalny -->
+<div id="welcome">
+  <h1>WSZYSTKIEGO NAJLEPSZEGO Z OKAZJI DNIA MAMY!</h1>
+  <p>Zagraj w grę, zbieraj prezenty do koszyczka 🎁🌷🍫</p>
+  <p>Zbierz 10 prezentów by wygrać!</p>
+  <button class="button" onclick="startGame()">Kliknij</button>
+</div>
+
+<canvas id="gameCanvas" width="500" height="600"></canvas>
+
+<div id="controls">
+  <button class="control-button" ontouchstart="moveLeft=true" ontouchend="moveLeft=false">◀️</button>
+  <button class="control-button" ontouchstart="moveRight=true" ontouchend="moveRight=false">▶️</button>
+</div>
+
+<!-- Gratulacje -->
+<div id="winSection">
+  <h2>🎉 GRATULACJE! WYGRAŁAŚ 🎉</h2>
+  <button class="button" onclick="showFinal()">Kliknij</button>
+</div>
+
+<!-- Ostateczny ekran -->
+<div id="finalMessage">
+  <h2>KOCHAM CIĘ MAMUŚ 💖</h2>
+</div>
+
+<script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const welcome = document.getElementById('welcome');
+  const winSection = document.getElementById('winSection');
+  const finalMessage = document.getElementById('finalMessage');
+  const controls = document.getElementById('controls');
+
+  let basket = { x: 200, y: 550, width: 80, height: 30, speed: 7 };
+  let gifts = ['🎁', '🌷', '🍫', '🧸', '💐'];
+  let items = [];
+  let score = 0;
+  let moveLeft = false;
+  let moveRight = false;
+  let gameInterval;
+  let itemInterval;
+  let balloonInterval;
+  let heartInterval;
+
+  function startGame() {
+    welcome.style.display = 'none';
+    canvas.style.display = 'block';
+    controls.style.display = 'block';
+    score = 0;
+    items = [];
+    gameInterval = requestAnimationFrame(gameLoop);
+    itemInterval = setInterval(dropGift, 1000);
+  }
+
+  function dropGift() {
+    const x = Math.random() * (canvas.width - 30);
+    const emoji = gifts[Math.floor(Math.random() * gifts.length)];
+    items.push({ x, y: 0, emoji, speed: 2 + Math.random() * 2 });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#ff66a3';
+    ctx.fillRect(basket.x, basket.y, basket.width, basket.height);
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      ctx.font = '30px Arial';
+      ctx.fillText(item.emoji, item.x, item.y);
+      item.y += item.speed;
+
+      if (item.y > canvas.height) {
+        items.splice(i, 1);
+        i--;
+      } else if (item.y + 30 >= basket.y &&
+                 item.x >= basket.x &&
+                 item.x <= basket.x + basket.width) {
+        items.splice(i, 1);
+        i--;
+        score++;
+        if (score >= 10) {
+          endGame();
+        }
+      }
+    }
+
+    ctx.fillStyle = '#d63384';
+    ctx.font = '20px Arial';
+    ctx.fillText('Punkty: ' + score, 10, 20);
+  }
+
+  function gameLoop() {
+    draw();
+    if (moveLeft && basket.x > 0) basket.x -= basket.speed;
+    if (moveRight && basket.x + basket.width < canvas.width) basket.x += basket.speed;
+    gameInterval = requestAnimationFrame(gameLoop);
+  }
+
+  function endGame() {
+    clearInterval(itemInterval);
+    cancelAnimationFrame(gameInterval);
+    canvas.style.display = 'none';
+    controls.style.display = 'none';
+    winSection.classList.add('active');
+    startFloating('balloon', '🎈', balloonInterval);
+  }
+
+  function showFinal() {
+    winSection.classList.remove('active');
+    clearFloating();
+    finalMessage.classList.add('active');
+    startFloating('heart', '💖', heartInterval);
+  }
+
+  function startFloating(className, symbol, intervalRef) {
+    intervalRef = setInterval(() => {
+      const el = document.createElement('div');
+      el.className = `floating `;
+      el.innerText = symbol;
+      el.style.left = Math.random() * 100 + 'vw';
+      el.style.fontSize = '4em';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 6000);
+    }, 400);
+
+    if (className === 'balloon') balloonInterval = intervalRef;
+    else if (className === 'heart') heartInterval = intervalRef;
+  }
+
+  function clearFloating() {
+    clearInterval(balloonInterval);
+    clearInterval(heartInterval);
+    document.querySelectorAll('.floating').forEach(el => el.remove());
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft') moveLeft = true;
+    if (e.key === 'ArrowRight') moveRight = true;
+  });
+  document.addEventListener('keyup', e => {
+    if (e.key === 'ArrowLeft') moveLeft = false;
+    if (e.key === 'ArrowRight') moveRight = false;
+  });
+</script>
+
+</body>
+</html>
